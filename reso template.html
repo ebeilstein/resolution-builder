@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City of La Verne — Resolution Builder</title>
+<script src="docx.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+  header { background: #1a3a5c; color: white; padding: 18px 32px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  header .seal { width: 52px; height: 52px; background: #c9a84c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #1a3a5c; flex-shrink: 0; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header p { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+  /* Two-column layout */
+  .workspace { display: grid; grid-template-columns: 1fr 420px; gap: 24px; max-width: 1400px; margin: 28px auto; padding: 0 24px 60px; align-items: start; }
+  .form-col { min-width: 0; }
+
+  /* Preview panel */
+  .preview-col { position: sticky; top: 24px; }
+  .preview-panel { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; }
+  .preview-header { background: #2c5282; color: white; padding: 12px 18px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; justify-content: space-between; }
+  .preview-header span { opacity: 0.7; font-weight: 400; font-size: 11px; text-transform: none; letter-spacing: 0; }
+  .preview-body { padding: 28px 32px; font-family: Arial, sans-serif; font-size: 11px; line-height: 1.6; color: #111; min-height: 300px; max-height: 80vh; overflow-y: auto; }
+  .preview-body .p-resnum { text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 10px; }
+  .preview-body .p-title { font-weight: bold; margin-bottom: 10px; text-align: justify; }
+  .preview-body .p-whereas { text-indent: 2em; margin-bottom: 8px; text-align: justify; }
+  .preview-body .p-whereas b { font-weight: bold; }
+  .preview-body .p-resolved { margin-bottom: 8px; padding-left: 2em; text-align: justify; }
+  .preview-body .p-section { text-indent: 2em; margin-bottom: 8px; text-align: justify; }
+  .preview-body .p-section b { text-decoration: underline; }
+  .preview-body .p-passed { padding-left: 2em; font-weight: bold; margin-bottom: 16px; }
+  .preview-body .p-sigsblock { margin-top: 8px; }
+  .preview-body .p-sig-right { text-align: right; border-bottom: 1px solid #333; margin-bottom: 2px; padding-bottom: 1px; }
+  .preview-body .p-sig-right-name { text-align: right; margin-bottom: 10px; font-size: 10px; }
+  .preview-body .p-attest { font-weight: bold; margin-bottom: 4px; }
+  .preview-body .p-sig-left { border-bottom: 1px solid #333; margin-bottom: 2px; width: 55%; }
+  .preview-body .p-sig-left-name { font-size: 10px; margin-bottom: 16px; }
+  .preview-body .p-cert-heading { text-align: center; font-weight: bold; text-decoration: underline; font-size: 13px; margin-bottom: 8px; }
+  .preview-body .p-cert-text { margin-bottom: 6px; text-align: justify; text-indent: 2em; }
+  .preview-body .p-vote { padding-left: 2em; font-weight: bold; }
+  .preview-body .p-vote-noindent { font-weight: bold; }
+  .preview-empty { color: #aaa; font-style: italic; text-align: center; padding: 40px 20px; font-size: 13px; }
+
+  /* Form cards */
+  .card { background: white; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; }
+  .card-header { background: #1a3a5c; color: white; padding: 12px 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+  .card-header .num { background: #c9a84c; color: #1a3a5c; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; flex-shrink: 0; }
+  .card-body { padding: 20px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.single { grid-template-columns: 1fr; }
+  label { display: block; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  label .req { color: #c0392b; }
+
+  input[type="text"], input[type="date"], textarea {
+    width: 100%; border: 1.5px solid #dde1e7; border-radius: 6px; padding: 8px 11px;
+    font-size: 13.5px; font-family: inherit; color: #1a1a2e; background: #fafbfc;
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  }
+  input:focus, textarea:focus { border-color: #1a3a5c; box-shadow: 0 0 0 3px rgba(26,58,92,0.1); background: white; }
+  textarea { resize: vertical; min-height: 76px; line-height: 1.5; }
+
+  .clause-block { border: 1.5px solid #e8eaed; border-radius: 8px; padding: 14px; margin-bottom: 10px; background: #fafbfc; }
+  .clause-label { font-size: 11px; font-weight: 800; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between; }
+  .suffix-note { font-size: 11px; color: #999; font-style: italic; margin-top: 5px; }
+  .btn-remove { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 20px; line-height: 1; padding: 1px 5px; border-radius: 4px; }
+  .btn-remove:hover { background: #fdecea; }
+  .section-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .section-number-badge { background: #1a3a5c; color: white; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+  .btn-add { display: flex; align-items: center; justify-content: center; gap: 6px; background: #eef2f7; border: 1.5px dashed #aab8c8; color: #1a3a5c; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; width: 100%; margin-top: 2px; transition: all 0.15s; }
+  .btn-add:hover { background: #dce6f0; border-color: #1a3a5c; }
+
+  /* Action buttons */
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .generate-btn { background: #1a3a5c; color: white; border: none; border-radius: 8px; padding: 14px 20px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; width: 100%; justify-content: center; box-shadow: 0 2px 8px rgba(26,58,92,0.3); transition: background 0.2s; }
+  .generate-btn:hover { background: #0f2540; }
+  .generate-btn:disabled { background: #8a9bb0; cursor: not-allowed; }
+  .save-btn { background: white; color: #1a3a5c; border: 2px solid #1a3a5c; border-radius: 8px; padding: 14px 20px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; width: 100%; justify-content: center; transition: all 0.2s; }
+  .save-btn:hover { background: #eef2f7; }
+
+  .draft-bar { background: #fffbea; border: 1.5px solid #f0c040; border-radius: 8px; padding: 10px 16px; font-size: 13px; color: #7a5c00; display: none; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .draft-bar b { font-weight: 700; }
+  .draft-bar button { background: #1a3a5c; color: white; border: none; border-radius: 5px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .draft-bar .dismiss { background: none; color: #7a5c00; border: none; font-size: 18px; cursor: pointer; padding: 0 2px; }
+
+  #status-msg { display: none; background: #eafaf1; border: 1.5px solid #2ecc71; color: #1e8449; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 600; margin-top: 12px; text-align: center; }
+  #error-msg { display: none; background: #fdecea; border: 1.5px solid #e74c3c; color: #c0392b; border-radius: 8px; padding: 12px 18px; font-size: 13px; font-weight: 600; margin-top: 12px; }
+  .hint { font-size: 11.5px; color: #888; margin-top: 4px; line-height: 1.4; }
+
+  /* Cheat sheet */
+  .cheat-card { border: none; }
+  .cheat-card .card-header { background: #c9a84c; color: #1a3a5c; }
+  select#res-type {
+    width: 100%; border: 1.5px solid #dde1e7; border-radius: 6px; padding: 8px 11px;
+    font-size: 13.5px; font-family: inherit; color: #1a1a2e; background: #fafbfc;
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none; cursor: pointer;
+  }
+  select#res-type:focus { border-color: #1a3a5c; box-shadow: 0 0 0 3px rgba(26,58,92,0.1); background: white; }
+  .cheat-notes {
+    display: none; margin-top: 14px; background: #fffbea; border: 1.5px solid #f0c040;
+    border-radius: 8px; padding: 14px 18px;
+  }
+  .cheat-notes.visible { display: block; }
+  .cheat-notes .cheat-title { font-size: 12px; font-weight: 800; color: #7a5c00; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .cheat-notes ul { margin: 0; padding-left: 20px; }
+  .cheat-notes li { font-size: 13px; color: #5c4500; line-height: 1.6; margin-bottom: 4px; }
+
+  @media (max-width: 1000px) {
+    .workspace { grid-template-columns: 1fr; }
+    .preview-col { position: static; }
+  }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .action-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="seal">LV</div>
+  <div>
+    <h1>City of La Verne — Resolution Builder</h1>
+    <p>Fill in the form — your resolution preview updates automatically as you type</p>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- LEFT: Form -->
+  <div class="form-col">
+
+    <!-- Draft restore bar (shown if saved draft exists) -->
+    <div class="draft-bar" id="draft-bar">
+      📋 <span><b>Saved draft found.</b> Would you like to restore your last session?</span>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button onclick="restoreDraft()">Restore Draft</button>
+        <button class="dismiss" onclick="dismissDraft()" title="Dismiss">×</button>
+      </div>
+    </div>
+
+    <!-- Cheat Sheet: Resolution Type -->
+    <div class="card cheat-card">
+      <div class="card-header">🗒️ Resolution Type — Optional Guidance</div>
+      <div class="card-body">
+        <label>What type of resolution is this?</label>
+        <select id="res-type" onchange="updateCheatSheet()">
+          <option value="">— Select a type (optional) —</option>
+          <option value="fiscal">Fiscal / Fee / Rate Resolution</option>
+          <option value="contract">Contract / Agreement Authorization</option>
+          <option value="landuse">Land Use / Entitlement Action</option>
+        </select>
+        <div class="cheat-notes" id="cheat-notes">
+          <div class="cheat-title" id="cheat-title"></div>
+          <ul id="cheat-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="card">
+      <div class="card-header"><span class="num">1</span> Resolution Header</div>
+      <div class="card-body">
+        <div class="form-row">
+          <div>
+            <label>Resolution Number <span class="req">*</span></label>
+            <input type="text" id="res-number" placeholder="e.g. 26-14" oninput="updatePreview(); autosave()" />
+          </div>
+          <div>
+            <label>Meeting Date <span class="req">*</span></label>
+            <input type="date" id="meeting-date" oninput="updatePreview(); autosave()" />
+          </div>
+        </div>
+        <div class="form-row single">
+          <div>
+            <label>Resolution Title <span class="req">*</span></label>
+            <textarea id="res-title" rows="3"
+              placeholder="AUTHORIZING THE CITY MANAGER TO EXECUTE AN AGREEMENT WITH [PARTY] FOR [PURPOSE]"
+              oninput="updatePreview(); autosave()"></textarea>
+            <div class="hint">Enter only the unique part of the title in ALL CAPS. The standard opening — "A RESOLUTION OF THE CITY COUNCIL, CITY OF LA VERNE, CALIFORNIA," — is added automatically.</div>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div>
+            <label>File Name <span class="req">*</span></label>
+            <input type="text" id="short-title" placeholder="e.g. for Retired Annuitant Robert Russell"
+              oninput="autosave()" />
+            <div class="hint">This is the file name used when the document downloads — "Resolution_" is added automatically (e.g. "Resolution_for_Retired_Annuitant_Robert_Russell.docx"). Not shown in the resolution document itself.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card">
+      <div class="card-header"><span class="num">2</span> Whereas Clauses</div>
+      <div class="card-body">
+        <div class="hint" style="margin-bottom:12px">Each clause starts with <b>WHEREAS,</b> (added automatically). All clauses except the last will end with <b>"; and"</b> — the last will end with a <b>period</b>. Add one clause per box.</div>
+        <div id="whereas-list"></div>
+        <button class="btn-add" onclick="addWhereas()">+ Add Whereas Clause</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="card">
+      <div class="card-header"><span class="num">3</span> Resolution Sections</div>
+      <div class="card-body">
+        <div class="hint" style="margin-bottom:12px">Each section is labeled <b>Section 1., Section 2.,</b> etc. automatically. Enter only the body text for each section. A final section is always added automatically — you don't need to write it: <i>"The Mayor shall sign and the Deputy City Clerk shall certify to the passage and adoption of this Resolution and thereupon the same shall take effect and be in force."</i></div>
+        <div id="sections-list"></div>
+        <button class="btn-add" onclick="addSection()">+ Add Section</button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-row">
+      <button class="generate-btn" id="gen-btn" onclick="generateDoc()">📄 Download .docx</button>
+      <button class="save-btn" onclick="saveDraft()">💾 Save Draft</button>
+    </div>
+    <div id="status-msg"></div>
+    <div id="error-msg"></div>
+
+  </div><!-- end form-col -->
+
+  <!-- RIGHT: Preview -->
+  <div class="preview-col">
+    <div class="preview-panel">
+      <div class="preview-header">
+        Live Preview
+        <span>Updates as you type</span>
+      </div>
+      <div class="preview-body" id="preview-body">
+        <div class="preview-empty">Your resolution will appear here as you fill in the form.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end workspace -->
+
+<script>
+const MAYOR = 'Tim Hepburn';
+const CLERK = 'Debra Fritz';
+const CLERK_FULL = 'Debra Fritz, CMC, Deputy City Clerk';
+const DRAFT_KEY = 'lv_resolution_draft';
+
+// ── CHEAT SHEET DATA ─────────────────────────────────────────────────
+
+const CHEAT_SHEET = {
+  fiscal: {
+    title: 'Fiscal / Fee / Rate Resolutions — Make sure to include:',
+    items: [
+      'Legal authority (Govt. Code, Prop 218, Mitigation Fee Act)',
+      'Public noticing/hearing requirements',
+      'CEQA determination, where applicable',
+      'Effective date when new rates go into effect',
+      'Attach and reference exhibits explaining new fee rates'
+    ]
+  },
+  contract: {
+    title: 'Contract / Agreement Authorizations — Make sure to include:',
+    items: [
+      'Who the contract is being awarded to',
+      'Authorization for the City Manager to execute the agreement and any related or supporting documents',
+      'Exhibits discussing project costs, scope, etc., where applicable',
+      'Contract amount and where funds are being allocated from',
+      'CEQA determination, where applicable'
+    ]
+  },
+  landuse: {
+    title: 'Land Use / Entitlement Actions — Make sure to include:',
+    items: [
+      'Public noticing/hearing requirements',
+      'How this action is consistent with other Plans or local zoning',
+      'The expiration or effective date',
+      'CEQA determination, where applicable'
+    ]
+  }
+};
+
+function updateCheatSheet() {
+  const type = document.getElementById('res-type').value;
+  const notesBox = document.getElementById('cheat-notes');
+  if (!type || !CHEAT_SHEET[type]) {
+    notesBox.classList.remove('visible');
+    return;
+  }
+  const data = CHEAT_SHEET[type];
+  document.getElementById('cheat-title').textContent = data.title;
+  document.getElementById('cheat-list').innerHTML = data.items.map(function(i){ return '<li>' + i + '</li>'; }).join('');
+  notesBox.classList.add('visible');
+  autosave();
+}
+
+let whereasCount = 0;
+let sectionCount = 0;
+
+// ── WHEREAS / SECTION MANAGEMENT ──────────────────────────────────────
+
+function addWhereas(text) {
+  whereasCount++;
+  const id = 'whereas-' + whereasCount;
+  const div = document.createElement('div');
+  div.className = 'clause-block';
+  div.id = id;
+  div.innerHTML =
+    '<div class="clause-label">' +
+      '<span>Whereas Clause ' + whereasCount + '</span>' +
+      '<button class="btn-remove" onclick="removeClause(\'' + id + '\',\'whereas\')" title="Remove this clause">×</button>' +
+    '</div>' +
+    '<textarea rows="3" ' +
+      'placeholder="e.g. the City of La Verne requires [service/action] in order to [purpose/benefit]" ' +
+      'oninput="updatePreview();autosave()">' + (text || '') + '</textarea>' +
+    '<div class="suffix-note">Do not include "WHEREAS," or the ending punctuation — both are added automatically.</div>';
+  document.getElementById('whereas-list').appendChild(div);
+  updatePreview();
+}
+
+function addSection(text) {
+  sectionCount++;
+  const id = 'section-' + sectionCount;
+  const div = document.createElement('div');
+  div.className = 'clause-block';
+  div.id = id;
+  div.innerHTML =
+    '<div class="section-title-row">' +
+      '<span class="section-number-badge">Section ' + sectionCount + '</span>' +
+      '<button class="btn-remove" onclick="removeClause(\'' + id + '\',\'section\')" title="Remove this section" style="margin-left:auto">×</button>' +
+    '</div>' +
+    '<textarea rows="3" ' +
+      'placeholder="e.g. The City Manager is hereby authorized to execute an Agreement with [Party] for [purpose], in substantially the form attached hereto." ' +
+      'oninput="updatePreview();autosave()">' + (text || '') + '</textarea>';
+  document.getElementById('sections-list').appendChild(div);
+  updatePreview();
+}
+
+function removeClause(id, type) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  if (type === 'section') renumberSections();
+  if (type === 'whereas') renumberWhereas();
+  updatePreview();
+  autosave();
+}
+
+function renumberSections() {
+  document.querySelectorAll('#sections-list .clause-block').forEach(function(b, i) {
+    const badge = b.querySelector('.section-number-badge');
+    if (badge) badge.textContent = 'Section ' + (i + 1);
+  });
+  sectionCount = document.querySelectorAll('#sections-list .clause-block').length;
+}
+
+function renumberWhereas() {
+  document.querySelectorAll('#whereas-list .clause-block').forEach(function(b, i) {
+    const label = b.querySelector('.clause-label span');
+    if (label) label.textContent = 'Whereas Clause ' + (i + 1);
+  });
+  whereasCount = document.querySelectorAll('#whereas-list .clause-block').length;
+}
+
+// ── DATE / ORDINAL HELPERS ─────────────────────────────────────────────
+
+function ordinalSuffix(n) {
+  if (n >= 11 && n <= 13) return 'th';
+  var r = n % 10;
+  return r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
+}
+
+function parseMeetingDate(raw) {
+  if (!raw) return null;
+  var parts = raw.split('-').map(Number);
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return { yr: parts[0], mo: parts[1], dy: parts[2], monthName: MONTHS[parts[1]-1], daySuffix: ordinalSuffix(parts[2]) };
+}
+
+// ── LIVE PREVIEW ───────────────────────────────────────────────────────
+
+function updatePreview() {
+  const resNum    = (document.getElementById('res-number').value || '').trim();
+  const dateRaw   = document.getElementById('meeting-date').value;
+  const resTitle  = (document.getElementById('res-title').value || '').trim();
+  const whereasBlocks  = document.querySelectorAll('#whereas-list .clause-block');
+  const sectionBlocks  = document.querySelectorAll('#sections-list .clause-block');
+
+  const hasAny = resNum || dateRaw || resTitle || whereasBlocks.length || sectionBlocks.length;
+  if (!hasAny) {
+    document.getElementById('preview-body').innerHTML = '<div class="preview-empty">Your resolution will appear here as you fill in the form.</div>';
+    return;
+  }
+
+  const dt = parseMeetingDate(dateRaw);
+  const dateStr = dt ? (dt.dy + dt.daySuffix + ' day of ' + dt.monthName + ', ' + dt.yr) : '_______________';
+
+  var html = '';
+
+  // Resolution number
+  html += '<div class="p-resnum">RESOLUTION NO. ' + (resNum || 'XX-XX') + '</div>';
+
+  // Title
+  if (resTitle) {
+    html += '<div class="p-title">A RESOLUTION OF THE CITY COUNCIL, CITY OF LA VERNE, CALIFORNIA, ' + resTitle.toUpperCase() + '</div>';
+  }
+
+  // Whereas
+  var whereasTexts = Array.from(whereasBlocks).map(function(b){ return (b.querySelector('textarea').value||'').trim(); });
+  whereasTexts.forEach(function(text, idx) {
+    var suffix = (idx === whereasTexts.length - 1) ? '.' : '; and';
+    var body = text ? (text + suffix) : '<span style="color:#bbb">[clause text]</span>';
+    html += '<div class="p-whereas"><b>WHEREAS,</b> ' + body + '</div>';
+  });
+
+  // BE IT RESOLVED
+  if (whereasTexts.length) {
+    html += '<div class="p-resolved"><b>NOW, THEREFORE, BE IT RESOLVED</b> by the City Council of the City of La Verne as follows:</div>';
+  }
+
+  // Sections
+  var sectionTexts = Array.from(sectionBlocks).map(function(b){ return (b.querySelector('textarea').value||'').trim(); });
+  sectionTexts.forEach(function(text, idx) {
+    var body = text ? text : '<span style="color:#bbb">[section text]</span>';
+    html += '<div class="p-section"><b>Section ' + (idx+1) + '.</b>  ' + body + '</div>';
+  });
+
+  // Fixed final section — always appended automatically
+  if (sectionTexts.length) {
+    html += '<div class="p-section"><b>Section ' + (sectionTexts.length + 1) + '.</b>  The Mayor shall sign and the Deputy City Clerk shall certify to the passage and adoption of this Resolution and thereupon the same shall take effect and be in force.</div>';
+  }
+
+  // PASSED
+  if (resNum || dateRaw) {
+    html += '<div class="p-passed">PASSED, APPROVED, AND ADOPTED this ' + dateStr + '.</div>';
+  }
+
+  // Signatures
+  html += '<div class="p-sigsblock">';
+  html += '<div class="p-sig-right" style="width:55%;margin-left:auto">&nbsp;</div>';
+  html += '<div class="p-sig-right-name">Mayor ' + MAYOR + '</div>';
+  html += '<div class="p-attest">ATTEST:</div>';
+  html += '<div class="p-sig-left">&nbsp;</div>';
+  html += '<div class="p-sig-left-name">' + CLERK_FULL + '</div>';
+  html += '</div>';
+
+  // Certification
+  html += '<div class="p-cert-heading">CERTIFICATION</div>';
+  html += '<div class="p-cert-text">I hereby certify that the foregoing <b>[Resolution No. ' + (resNum||'XX-XX') + ']</b> was duly and regularly adopted by the City Council of the City of La Verne at a meeting thereof held on the <b>' + dateStr + '</b>, by the following vote:</div>';
+  html += '<div class="p-vote-noindent">AYES:</div><div class="p-vote-noindent">NOES:</div><div class="p-vote-noindent">ABSENT:</div><div class="p-vote-noindent">ABSTAIN:</div>';
+  html += '<br><div class="p-sig-left" style="width:50%">&nbsp;</div>';
+  html += '<div class="p-sig-left-name">' + CLERK_FULL + '</div>';
+
+  document.getElementById('preview-body').innerHTML = html;
+}
+
+// ── SAVE / RESTORE DRAFT ───────────────────────────────────────────────
+
+function getDraftData() {
+  return {
+    resNum:   document.getElementById('res-number').value,
+    date:     document.getElementById('meeting-date').value,
+    title:    document.getElementById('res-title').value,
+    shortTitle: document.getElementById('short-title').value,
+    resType:  document.getElementById('res-type').value,
+    whereas:  Array.from(document.querySelectorAll('#whereas-list .clause-block textarea')).map(function(t){ return t.value; }),
+    sections: Array.from(document.querySelectorAll('#sections-list .clause-block textarea')).map(function(t){ return t.value; }),
+  };
+}
+
+function autosave() {
+  try { localStorage.setItem(DRAFT_KEY + '_auto', JSON.stringify(getDraftData())); } catch(e){}
+}
+
+function saveDraft() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(getDraftData()));
+    showStatus('💾 Draft saved! It will be waiting for you next time you open this file.', 'success');
+  } catch(e) {
+    showStatus('⚠️ Could not save draft. Make sure the file is opened from a local folder.', 'error');
+  }
+}
+
+function restoreDraft() {
+  var raw = null;
+  try { raw = localStorage.getItem(DRAFT_KEY) || localStorage.getItem(DRAFT_KEY + '_auto'); } catch(e){}
+  if (!raw) return;
+  var data = JSON.parse(raw);
+
+  document.getElementById('res-number').value = data.resNum || '';
+  document.getElementById('meeting-date').value = data.date || '';
+  document.getElementById('res-title').value = data.title || '';
+  document.getElementById('short-title').value = data.shortTitle || '';
+  document.getElementById('res-type').value = data.resType || '';
+  updateCheatSheet();
+
+  document.getElementById('whereas-list').innerHTML = '';
+  whereasCount = 0;
+  (data.whereas || []).forEach(function(t){ addWhereas(t); });
+
+  document.getElementById('sections-list').innerHTML = '';
+  sectionCount = 0;
+  (data.sections || []).forEach(function(t){ addSection(t); });
+
+  document.getElementById('draft-bar').style.display = 'none';
+  updatePreview();
+  showStatus('✅ Draft restored!', 'success');
+}
+
+function dismissDraft() {
+  document.getElementById('draft-bar').style.display = 'none';
+}
+
+function checkForDraft() {
+  try {
+    var hasSaved = localStorage.getItem(DRAFT_KEY);
+    var hasAuto  = localStorage.getItem(DRAFT_KEY + '_auto');
+    if (hasSaved || hasAuto) {
+      document.getElementById('draft-bar').style.display = 'flex';
+    }
+  } catch(e){}
+}
+
+// ── STATUS MESSAGES ────────────────────────────────────────────────────
+
+function showStatus(msg, type) {
+  var s = document.getElementById('status-msg');
+  var e = document.getElementById('error-msg');
+  if (type === 'success') { s.textContent = msg; s.style.display = 'block'; e.style.display = 'none'; }
+  else { e.textContent = msg; e.style.display = 'block'; s.style.display = 'none'; }
+  setTimeout(function(){ s.style.display = 'none'; }, 6000);
+}
+
+// ── GENERATE DOCX ─────────────────────────────────────────────────────
+
+async function generateDoc() {
+  const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
+
+  const resNum       = document.getElementById('res-number').value.trim();
+  const meetingDateRaw = document.getElementById('meeting-date').value;
+  const resTitle     = document.getElementById('res-title').value.trim();
+  const shortTitle    = document.getElementById('short-title').value.trim();
+  const whereasBlocks  = document.querySelectorAll('#whereas-list .clause-block');
+  const sectionBlocks  = document.querySelectorAll('#sections-list .clause-block');
+
+  const errors = [];
+  if (!resNum) errors.push('Resolution Number');
+  if (!meetingDateRaw) errors.push('Meeting Date');
+  if (!resTitle) errors.push('Resolution Title');
+  if (!shortTitle) errors.push('File Name');
+  if (whereasBlocks.length === 0) errors.push('at least one Whereas clause');
+  if (sectionBlocks.length === 0) errors.push('at least one Section');
+
+  if (errors.length > 0) {
+    showStatus('⚠️ Please complete: ' + errors.join(', '), 'error');
+    return;
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+
+  try {
+    const dt = parseMeetingDate(meetingDateRaw);
+
+    const font = { ascii: 'Arial', eastAsia: 'Arial', hAnsi: 'Arial', cs: 'Arial' };
+    const sz = 24;
+    const base = { font: font, size: sz, color: '000000' };
+    const bold = { font: font, size: sz, bold: true, color: '000000' };
+
+    function pp(align) {
+      return { spacing: { after: 0, line: 240, lineRule: 'auto' }, alignment: align || AlignmentType.BOTH };
+    }
+    function blank() {
+      return new Paragraph({ spacing: { after: 0, line: 240, lineRule: 'auto' }, children: [] });
+    }
+
+    const children = [];
+
+    // Resolution number
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.CENTER), {
+      children: [new TextRun(Object.assign({}, bold, { text: 'RESOLUTION NO. ' + resNum, size: 44 }))]
+    })));
+    children.push(blank());
+
+    // Title
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.BOTH), {
+      children: [
+        new TextRun(Object.assign({}, bold, { text: 'A RESOLUTION OF THE CITY COUNCIL, CITY OF LA VERNE, CALIFORNIA, ' })),
+        new TextRun(Object.assign({}, bold, { text: resTitle.toUpperCase() }))
+      ]
+    })));
+    children.push(blank());
+
+    // Whereas
+    var whereasTexts = Array.from(whereasBlocks).map(function(b){ return b.querySelector('textarea').value.trim(); });
+    whereasTexts.forEach(function(text, idx) {
+      var suffix = (idx === whereasTexts.length - 1) ? '.' : '; and';
+      children.push(new Paragraph({
+        spacing: { after: 0, line: 240, lineRule: 'auto' },
+        alignment: AlignmentType.BOTH,
+        indent: { firstLine: 720 },
+        children: [
+          new TextRun(Object.assign({}, bold, { text: 'WHEREAS, ' })),
+          new TextRun(Object.assign({}, base, { text: text + suffix }))
+        ]
+      }));
+      children.push(blank());
+    });
+
+    // BE IT RESOLVED
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.BOTH), { indent: { left: 720 },
+      children: [
+        new TextRun(Object.assign({}, bold, { text: 'NOW, THEREFORE, BE IT RESOLVED ' })),
+        new TextRun(Object.assign({}, base, { text: 'by the City Council of the City of La Verne as follows: ' }))
+      ]
+    })));
+    children.push(blank());
+
+    // Sections
+    var sectionTexts = Array.from(sectionBlocks).map(function(b){ return b.querySelector('textarea').value.trim(); });
+    sectionTexts.forEach(function(text, idx) {
+      children.push(new Paragraph({
+        spacing: { after: 0, line: 240, lineRule: 'auto' },
+        alignment: AlignmentType.BOTH,
+        indent: { firstLine: 720 },
+        children: [
+          new TextRun(Object.assign({}, bold, { text: 'Section ' + (idx + 1) + '.', underline: { type: 'single' } })),
+          new TextRun(Object.assign({}, base, { text: '  ' + text }))
+        ]
+      }));
+      children.push(blank());
+    });
+
+    // Fixed final section — always appended automatically, continuing the numbering
+    children.push(new Paragraph({
+      spacing: { after: 0, line: 240, lineRule: 'auto' },
+      alignment: AlignmentType.BOTH,
+      indent: { firstLine: 720 },
+      children: [
+        new TextRun(Object.assign({}, bold, { text: 'Section ' + (sectionTexts.length + 1) + '.', underline: { type: 'single' } })),
+        new TextRun(Object.assign({}, base, { text: '  The Mayor shall sign and the Deputy City Clerk shall certify to the passage and adoption of this Resolution and thereupon the same shall take effect and be in force.' }))
+      ]
+    }));
+    children.push(blank());
+
+    // PASSED, APPROVED AND ADOPTED
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.BOTH), { indent: { left: 720 },
+      children: [new TextRun(Object.assign({}, bold, {
+        text: 'PASSED, APPROVED, AND ADOPTED this ' + dt.dy + dt.daySuffix + ' day of ' + dt.monthName + ', ' + dt.yr + '. '
+      }))]
+    })));
+    children.push(blank());
+    children.push(blank());
+
+    // Mayor signature — right aligned
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.RIGHT), {
+      children: [new TextRun(Object.assign({}, base, { text: '______________________________________' }))]
+    })));
+    children.push(new Paragraph({
+      spacing: { after: 0, line: 240, lineRule: 'auto' },
+      alignment: AlignmentType.CENTER,
+      indent: { left: 5000 },
+      children: [new TextRun(Object.assign({}, base, { text: 'Mayor ' + MAYOR }))]
+    }));
+    children.push(blank());
+
+    // ATTEST + Clerk signature (extra space between ATTEST and line for signing)
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.LEFT), {
+      children: [new TextRun(Object.assign({}, bold, { text: 'ATTEST:' }))]
+    })));
+    children.push(blank());
+    children.push(blank());
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.LEFT), {
+      children: [new TextRun(Object.assign({}, base, { text: '_______________________________' }))]
+    })));
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.LEFT), {
+      children: [new TextRun(Object.assign({}, base, { text: CLERK_FULL }))]
+    })));
+    children.push(blank());
+    children.push(blank());
+
+    // CERTIFICATION
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.CENTER), {
+      children: [new TextRun(Object.assign({}, bold, { text: 'CERTIFICATION', size: 36, underline: { type: 'single' } }))]
+    })));
+    children.push(blank());
+
+    // Certification paragraph (first line indented)
+    children.push(new Paragraph({
+      spacing: { after: 0, line: 240, lineRule: 'auto' },
+      alignment: AlignmentType.BOTH,
+      indent: { firstLine: 720 },
+      children: [
+        new TextRun(Object.assign({}, base, { text: 'I hereby certify that the foregoing ' })),
+        new TextRun(Object.assign({}, bold, { text: '[Resolution No. ' + resNum + ']' })),
+        new TextRun(Object.assign({}, base, { text: ' was duly and regularly adopted by the City Council of the City of La Verne at a meeting thereof held on the ' })),
+        new TextRun(Object.assign({}, bold, { text: dt.dy + dt.daySuffix })),
+        new TextRun(Object.assign({}, base, { text: ' day of ' })),
+        new TextRun(Object.assign({}, bold, { text: dt.monthName })),
+        new TextRun(Object.assign({}, base, { text: ', ' })),
+        new TextRun(Object.assign({}, bold, { text: String(dt.yr) })),
+        new TextRun(Object.assign({}, base, { text: ', by the following vote:' }))
+      ]
+    }));
+    children.push(blank());
+
+    // Vote rows — no indent, left aligned
+    ['AYES', 'NOES', 'ABSENT', 'ABSTAIN'].forEach(function(label) {
+      children.push(new Paragraph({
+        spacing: { after: 0, line: 240, lineRule: 'auto' },
+        alignment: AlignmentType.LEFT,
+        children: [new TextRun(Object.assign({}, bold, { text: label + ':' }))]
+      }));
+    });
+    children.push(blank());
+
+    // Clerk certification signature — right aligned
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.RIGHT), {
+      children: [new TextRun(Object.assign({}, base, { text: '____________________________________' }))]
+    })));
+    children.push(new Paragraph(Object.assign({}, pp(AlignmentType.RIGHT), {
+      children: [new TextRun(Object.assign({}, base, { text: CLERK_FULL }))]
+    })));
+
+    // Build & download
+    const { Footer, SimpleField, TabStopType } = docx;
+
+    // Footer for page 2+: resolution number left, page number centered
+    // Content width = 12240 - 1440 - 1440 = 9360; center tab at 4680
+    const footerPara = new Paragraph({
+      spacing: { after: 0, line: 240, lineRule: 'auto' },
+      tabStops: [{ type: TabStopType.CENTER, position: 4680 }],
+      children: [
+        new TextRun(Object.assign({}, base, { text: 'Resolution No. ' + resNum })),
+        new TextRun({ text: '\t' }),
+        new SimpleField('PAGE'),
+      ]
+    });
+
+    const doc = new Document({
+      styles: { default: { document: { run: { font: 'Arial', size: 24, color: '000000' } } } },
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 12240, height: 15840 },
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+          },
+          titlePage: true,
+        },
+        footers: {
+          default: new Footer({ children: [footerPara] }),
+          first: new Footer({ children: [new Paragraph({ children: [] })] }),
+        },
+        children: children
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const fileNameSlug = shortTitle.trim().replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '_');
+    const filename = 'Resolution_' + (fileNameSlug || resNum.replace(/[^a-zA-Z0-9-]/g, '_')) + '.docx';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showStatus('✅ Resolution downloaded successfully!', 'success');
+
+  } catch(err) {
+    showStatus('❌ Error generating document: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📄 Download .docx';
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────
+addWhereas();
+addSection();
+checkForDraft();
+</script>
+</body>
+</html>
