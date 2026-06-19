@@ -411,7 +411,7 @@ function updatePreview() {
 
   // BE IT RESOLVED
   if (whereasTexts.length) {
-    html += '<div class="p-resolved"><b>NOW, THEREFORE, BE IT RESOLVED</b> by the City Council of the City of La Verne as follows:</div>';
+    html += '<div class="p-resolved"><b>NOW, THEREFORE, BE IT RESOLVED</b> by the City Council of the City of La&nbsp;Verne as follows:</div>';
   }
 
   // Sections
@@ -442,7 +442,7 @@ function updatePreview() {
 
   // Certification
   html += '<div class="p-cert-heading">CERTIFICATION</div>';
-  html += '<div class="p-cert-text">I hereby certify that the foregoing <b>[Resolution No. ' + (resNum||'XX-XX') + ']</b> was duly and regularly adopted by the City Council of the City of La Verne at a meeting thereof held on the <b>' + dateStr + '</b>, by the following vote:</div>';
+  html += '<div class="p-cert-text">I hereby certify that the foregoing <b>[Resolution No. ' + (resNum||'XX-XX') + ']</b> was duly and regularly adopted by the City Council of the City of La&nbsp;Verne at a meeting thereof held on the <b>' + dateStr + '</b>, by the following vote:</div>';
   html += '<div class="p-vote-noindent">AYES:</div><div class="p-vote-noindent">NOES:</div><div class="p-vote-noindent">ABSENT:</div><div class="p-vote-noindent">ABSTAIN:</div>';
   html += '<br><div class="p-sig-left" style="width:50%">&nbsp;</div>';
   html += '<div class="p-sig-left-name">' + CLERK_FULL + '</div>';
@@ -582,7 +582,7 @@ async function generateDoc() {
     // Title
     children.push(new Paragraph(Object.assign({}, pp(AlignmentType.BOTH), {
       children: [
-        new TextRun(Object.assign({}, bold, { text: 'A RESOLUTION OF THE CITY COUNCIL, CITY OF LA VERNE, CALIFORNIA, ' })),
+        new TextRun(Object.assign({}, bold, { text: 'A RESOLUTION OF THE CITY COUNCIL, CITY OF LA\u00A0VERNE, CALIFORNIA, ' })),
         new TextRun(Object.assign({}, bold, { text: resTitle.toUpperCase() }))
       ]
     })));
@@ -608,7 +608,7 @@ async function generateDoc() {
     children.push(new Paragraph(Object.assign({}, pp(AlignmentType.BOTH), { indent: { left: 720 },
       children: [
         new TextRun(Object.assign({}, bold, { text: 'NOW, THEREFORE, BE IT RESOLVED ' })),
-        new TextRun(Object.assign({}, base, { text: 'by the City Council of the City of La Verne as follows: ' }))
+        new TextRun(Object.assign({}, base, { text: 'by the City Council of the City of La\u00A0Verne as follows: ' }))
       ]
     })));
     children.push(blank());
@@ -690,7 +690,7 @@ async function generateDoc() {
       children: [
         new TextRun(Object.assign({}, base, { text: 'I hereby certify that the foregoing ' })),
         new TextRun(Object.assign({}, bold, { text: '[Resolution No. ' + resNum + ']' })),
-        new TextRun(Object.assign({}, base, { text: ' was duly and regularly adopted by the City Council of the City of La Verne at a meeting thereof held on the ' })),
+        new TextRun(Object.assign({}, base, { text: ' was duly and regularly adopted by the City Council of the City of La\u00A0Verne at a meeting thereof held on the ' })),
         new TextRun(Object.assign({}, bold, { text: dt.dy + dt.daySuffix })),
         new TextRun(Object.assign({}, base, { text: ' day of ' })),
         new TextRun(Object.assign({}, bold, { text: dt.monthName })),
